@@ -4,21 +4,22 @@
 <script id="vertex-shader" type="x-shader/x-vertex">
 
 attribute vec2 a_position;
+attribute vec4 a_color;
+
+varying lowp vec4 v_color;
 
 void main(void) {
   gl_Position = vec4(a_position, 0.0, 1.0);
+  v_color = a_color;
 }
 
 </script>
 <script id="fragment-shader" type="x-shader/x-fragment">
 
-precision mediump float;
-
-uniform sampler2D u_image;
-uniform vec2 u_size;
+varying lowp vec4 v_color;
 
 void main(void) {
-  gl_FragColor = texture2D(u_image, vec2(gl_FragCoord.x / u_size.x, 1.0 - gl_FragCoord.y / u_size.y));
+  gl_FragColor = v_color;
 }
 
 </script>
@@ -66,27 +67,22 @@ var positionAttribute = context.getAttribLocation(program, "a_position");
 context.enableVertexAttribArray(positionAttribute);
 context.vertexAttribPointer(positionAttribute, 2, context.FLOAT, false, 0, 0);
 
-// Load the reference image.
-var image = new Image;
-image.src = "help.jpg";
-image.onload = loaded;
+// Define the colors (as RGBA vec4) for each vertex in the square.
+var colorBuffer = context.createBuffer();
+context.bindBuffer(context.ARRAY_BUFFER, colorBuffer);
+context.bufferData(context.ARRAY_BUFFER, new Float32Array([
+    1.0, 1.0, 0.0, 1.0,
+    0.0, 0.0, 1.0, 1.0,
+    0.0, 1.0, 1.0, 1.0,
+    1.0, 0.0, 1.0, 1.0
+  ]), context.STATIC_DRAW);
 
-// When the image is loaded…
-function loaded() {
+// Bind the color buffer to the color attribute.
+var colorAttribute = context.getAttribLocation(program, "a_color");
+context.enableVertexAttribArray(colorAttribute);
+context.vertexAttribPointer(colorAttribute, 4, context.FLOAT, false, 0, 0);
 
-  // Define the size.
-  var sizeUniform = context.getUniformLocation(program, "u_size");
-  context.uniform2fv(sizeUniform, [image.width, image.height]);
-
-  // Create a texture.
-  var texture = context.createTexture();
-  context.bindTexture(context.TEXTURE_2D, texture);
-  context.texParameteri(context.TEXTURE_2D, context.TEXTURE_MIN_FILTER, context.NEAREST);
-  context.texParameteri(context.TEXTURE_2D, context.TEXTURE_MAG_FILTER, context.NEAREST);
-  context.texImage2D(context.TEXTURE_2D, 0, context.RGBA, context.RGBA, context.UNSIGNED_BYTE, image);
-
-  // Draw the square!
-  context.drawArrays(context.TRIANGLE_FAN, 0, 4);
-}
+// Draw the square!
+context.drawArrays(context.TRIANGLE_FAN, 0, 4);
 
 </script>
